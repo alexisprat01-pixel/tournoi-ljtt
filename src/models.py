@@ -4,11 +4,21 @@ from typing import Optional
 
 
 @dataclass
+class Tournament:
+    id: int
+    name: str
+    event_date: str = ""    # ISO format "YYYY-MM-DD" or ""
+    notes: str = ""
+    created_at: str = ""    # ISO datetime
+    updated_at: str = ""
+
+
+@dataclass
 class Player:
     id: int
     name: str
-    club: str = ""
-    pool: str = ""  # "A", "B", or "" before assignment
+    points: int = 0      # initial ranking points (replaces "club")
+    pool: str = ""       # "A", "B", or "" before assignment
 
 
 @dataclass
@@ -18,10 +28,13 @@ class Match:
     phase: str                 # "pool" or "cross"
     player1_id: int
     player2_id: int
-    score1: int = 0            # sets won by player1
-    score2: int = 0            # sets won by player2
+    score1: int = 0            # sets won by player1 (derived from set_scores)
+    score2: int = 0            # sets won by player2 (derived from set_scores)
     played: bool = False
     pool: str = ""             # "A"/"B" for pool matches, "" for cross
+    set_scores: list = field(default_factory=list)  # [[p1, p2], ...] up to 5 sets
+    table_number: int = 0      # 1..3, 0 if not yet assigned
+    referee_id: int = 0        # player id, 0 if none
 
     def winner_id(self) -> Optional[int]:
         if not self.played:

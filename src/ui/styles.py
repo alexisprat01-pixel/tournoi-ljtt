@@ -93,7 +93,8 @@ QLineEdit, QSpinBox {{
     color: {TEXT};
     border: 1px solid {GREY_LIGHT};
     border-radius: 4px;
-    padding: 6px 8px;
+    padding: 8px 10px;
+    min-height: 22px;
     selection-background-color: {RED};
 }}
 QLineEdit:focus, QSpinBox:focus {{

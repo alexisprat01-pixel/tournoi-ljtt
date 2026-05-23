@@ -17,7 +17,7 @@ from .match_card import MatchCard
 class RoundsPage(QWidget):
     """Shows the 5 pool rounds + 6 cross rounds."""
 
-    score_changed = pyqtSignal(int, int, int, bool)        # match_id, s1, s2, played
+    sets_saved = pyqtSignal(int, list)                     # match_id, set_scores
     generate_cross_requested = pyqtSignal()                # user clicks "Générer phase finale"
 
     def __init__(self, parent: QWidget | None = None):
@@ -163,13 +163,14 @@ class RoundsPage(QWidget):
         p2 = self._players.get(m.player2_id)
         if p1 is None or p2 is None:
             return
-        card = MatchCard(m, p1, p2)
-        card.score_saved.connect(self.score_changed.emit)
+        referee = self._players.get(m.referee_id) if m.referee_id else None
+        card = MatchCard(m, p1, p2, referee=referee)
+        card.sets_saved.connect(self.sets_saved.emit)
         self.content_layout.addWidget(card)
 
     def _standings_table(self, standings: list[PlayerStanding]) -> QTableWidget:
-        table = QTableWidget(len(standings), 7)
-        table.setHorizontalHeaderLabels(["#", "Joueur", "Club", "J", "V", "Pts", "Diff sets"])
+        table = QTableWidget(len(standings), 6)
+        table.setHorizontalHeaderLabels(["#", "Joueur", "J", "V", "Pts", "Diff sets"])
         table.verticalHeader().setVisible(False)
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
@@ -178,14 +179,13 @@ class RoundsPage(QWidget):
             items = [
                 QTableWidgetItem(str(row + 1)),
                 QTableWidgetItem(st.player.name),
-                QTableWidgetItem(st.player.club),
                 QTableWidgetItem(str(st.played)),
                 QTableWidgetItem(str(st.wins)),
                 QTableWidgetItem(str(st.points)),
                 QTableWidgetItem(f"{st.set_diff:+d}"),
             ]
             for col, item in enumerate(items):
-                if col != 1 and col != 2:
+                if col != 1:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 table.setItem(row, col, item)
         table.resizeColumnsToContents()

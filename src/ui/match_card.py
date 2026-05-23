@@ -1,72 +1,135 @@
-"""A single match card with score inputs."""
+"""A single match card — colored table badge + referee + players + score on one line."""
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QPushButton, QSpinBox, QVBoxLayout, QWidget,
+    QFrame, QHBoxLayout, QLabel, QPushButton, QWidget,
 )
 
 from ..models import Match, Player
+from .set_dialog import SetScoresDialog
+
+
+# One distinctive colour per table, used for the round badge.
+TABLE_COLORS = {
+    1: "#C8102E",   # red — club colour
+    2: "#1E88E5",   # blue
+    3: "#43A047",   # green
+}
 
 
 class MatchCard(QFrame):
-    """Visual card for one match: shows both players and lets the user enter the score."""
+    """Read-only single-line match card with a colored table badge."""
 
-    score_saved = pyqtSignal(int, int, int, bool)  # match_id, score1, score2, played
+    sets_saved = pyqtSignal(int, list)   # match_id, set_scores
 
-    def __init__(self, match: Match, p1: Player, p2: Player, parent: QWidget | None = None):
+    def __init__(
+        self,
+        match: Match,
+        p1: Player,
+        p2: Player,
+        referee: Player | None = None,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent)
         self.setObjectName("matchCard")
         self.setProperty("played", match.played)
         self.match = match
+        self.p1 = p1
+        self.p2 = p2
+        self.referee = referee
 
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(10)
+        winner1 = match.played and match.score1 > match.score2
+        winner2 = match.played and match.score2 > match.score1
 
-        # Player 1
-        p1_label = QLabel(self._fmt(p1))
-        p1_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        p1_label.setMinimumWidth(180)
+        h = QHBoxLayout(self)
+        h.setContentsMargins(16, 12, 16, 12)
+        h.setSpacing(14)
 
-        self.score1 = QSpinBox()
-        self.score1.setRange(0, 5)
-        self.score1.setValue(match.score1)
-        self.score1.setFixedWidth(56)
-        self.score1.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Colored round badge for the table
+        badge = self._build_table_badge(match.table_number)
+        h.addWidget(badge)
+        h.addSpacing(6)
 
-        vs = QLabel("–")
-        vs.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        vs.setFixedWidth(12)
+        # Referee (or placeholder if unassigned)
+        ref_text = f"⚖  {referee.name}" if referee is not None else "⚖  —"
+        ref_lbl = QLabel(ref_text)
+        ref_lbl.setStyleSheet(
+            "color:#B4B4B8; font-size:10pt; background:transparent; "
+            "font-family:'Segoe UI Symbol','Segoe UI';"
+        )
+        ref_lbl.setMinimumWidth(170)
+        ref_lbl.setToolTip("Arbitre" if referee is None else f"Arbitre : {referee.name}")
+        h.addWidget(ref_lbl)
+        h.addSpacing(12)
 
-        self.score2 = QSpinBox()
-        self.score2.setRange(0, 5)
-        self.score2.setValue(match.score2)
-        self.score2.setFixedWidth(56)
-        self.score2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Player 1 (right aligned)
+        p1_lbl = QLabel(f"<b>{p1.name}</b>" if winner1 else p1.name)
+        p1_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        p1_lbl.setMinimumWidth(180)
+        p1_lbl.setContentsMargins(0, 0, 14, 0)   # breathing room before the score
+        h.addWidget(p1_lbl, 1)
 
-        p2_label = QLabel(self._fmt(p2))
-        p2_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        p2_label.setMinimumWidth(180)
+        # Score (with bold on the winner's count)
+        score_lbl = QLabel(self._fmt_score(match, winner1, winner2))
+        score_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        score_lbl.setFixedWidth(80)
+        score_lbl.setStyleSheet(
+            "font-size:14pt; background:transparent; padding: 0 6px;"
+        )
+        score_lbl.setToolTip(self._fmt_sets_tooltip(match))
+        h.addWidget(score_lbl)
 
-        self.btn = QPushButton("Valider" if not match.played else "Modifier")
-        self.btn.setObjectName("secondary" if match.played else "")
-        self.btn.clicked.connect(self._on_click)
+        # Player 2 (left aligned)
+        p2_lbl = QLabel(f"<b>{p2.name}</b>" if winner2 else p2.name)
+        p2_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        p2_lbl.setMinimumWidth(180)
+        p2_lbl.setContentsMargins(14, 0, 0, 0)   # breathing room after the score
+        h.addWidget(p2_lbl, 1)
+        h.addSpacing(8)
 
-        layout.addWidget(p1_label, 1)
-        layout.addWidget(self.score1)
-        layout.addWidget(vs)
-        layout.addWidget(self.score2)
-        layout.addWidget(p2_label, 1)
-        layout.addWidget(self.btn)
+        # Action button
+        self.btn = QPushButton("Modifier le score" if match.played else "Saisir le score")
+        if match.played:
+            self.btn.setObjectName("secondary")
+        self.btn.clicked.connect(self._open_dialog)
+        h.addWidget(self.btn)
 
     @staticmethod
-    def _fmt(p: Player) -> str:
-        if p.club:
-            return f"{p.name}  ({p.club})"
-        return p.name
+    def _build_table_badge(table_number: int) -> QLabel:
+        text = f"T{table_number}" if table_number else "?"
+        color = TABLE_COLORS.get(table_number, "#6C6C72")
+        badge = QLabel(text)
+        badge.setFixedSize(36, 36)
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        badge.setStyleSheet(
+            f"background-color:{color}; color:white; font-weight:bold; "
+            "font-size:11pt; border-radius:18px;"
+        )
+        badge.setToolTip(f"Table {table_number}" if table_number else "Table non assignée")
+        return badge
 
-    def _on_click(self):
-        s1, s2 = self.score1.value(), self.score2.value()
-        played = (s1 != s2) and (max(s1, s2) >= 1)
-        self.score_saved.emit(self.match.id, s1, s2, played)
+    def _open_dialog(self):
+        dlg = SetScoresDialog(self.match, self.p1, self.p2, parent=self)
+        if dlg.exec() != dlg.DialogCode.Accepted:
+            return
+        self.sets_saved.emit(self.match.id, dlg.get_set_scores())
+
+    # ----- formatting helpers -----
+    @staticmethod
+    def _fmt_score(m: Match, winner1: bool, winner2: bool) -> str:
+        if not m.played:
+            return "–"
+        left = f"<b>{m.score1}</b>" if winner1 else str(m.score1)
+        right = f"<b>{m.score2}</b>" if winner2 else str(m.score2)
+        return f"{left} - {right}"
+
+    @staticmethod
+    def _fmt_sets_tooltip(m: Match) -> str:
+        if not m.set_scores:
+            return "Aucun set saisi"
+        parts = []
+        for i, pair in enumerate(m.set_scores, start=1):
+            if isinstance(pair, (list, tuple)) and len(pair) >= 2:
+                parts.append(f"Set {i} : {pair[0]} - {pair[1]}")
+        return "\n".join(parts) if parts else "Aucun set saisi"
