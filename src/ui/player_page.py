@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .dialogs import confirm
+from .styles import RED, TEXT
 
 
 class PlayerPage(QWidget):
@@ -27,7 +28,10 @@ class PlayerPage(QWidget):
         outer.setContentsMargins(32, 24, 32, 24)
         outer.setSpacing(12)
 
-        title = QLabel("Saisie des joueurs")
+        title = QLabel(
+            f"<span style='color:{TEXT};'>Saisie des</span> "
+            f"<span style='color:{RED};'>joueurs</span>"
+        )
         title.setObjectName("h1")
         outer.addWidget(title)
 

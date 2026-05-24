@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
 from ..database import Database
 from ..models import Tournament
 from .dialogs import confirm
+from .styles import RED, TEXT
 from .tournament_dialog import TournamentDialog
 
 
@@ -40,7 +41,10 @@ class HomePage(QWidget):
         outer.setSpacing(12)
 
         header = QHBoxLayout()
-        title = QLabel("Mes tournois")
+        title = QLabel(
+            f"<span style='color:{TEXT};'>Mes</span> "
+            f"<span style='color:{RED};'>tournois</span>"
+        )
         title.setObjectName("h1")
         header.addWidget(title)
         header.addStretch()

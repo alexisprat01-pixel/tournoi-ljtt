@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
 
 from ..models import Match, Player, PlayerStanding
 from ..tournament import compute_standings
+from .styles import RED, TEXT
 
 
 class GeneralRankingPage(QWidget):
@@ -23,7 +24,10 @@ class GeneralRankingPage(QWidget):
         outer.setContentsMargins(32, 24, 32, 24)
         outer.setSpacing(12)
 
-        title = QLabel("Classement général")
+        title = QLabel(
+            f"<span style='color:{TEXT};'>Classement</span> "
+            f"<span style='color:{RED};'>général</span>"
+        )
         title.setObjectName("h1")
         outer.addWidget(title)
 

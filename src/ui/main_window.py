@@ -26,6 +26,7 @@ from .rounds_page import RoundsPage
 from .statistics_page import StatisticsPage
 from .styles import (
     BLACK, GREY, GREY_DARK, GREY_LIGHT, RED, STYLESHEET, TEXT, TEXT_DIM,
+    GlowBackground,
 )
 from .tournament_dialog import TournamentDialog
 
@@ -61,7 +62,8 @@ class MainWindow(QMainWindow):
 
     # ----- Layout -----
     def _build_ui(self):
-        central = QWidget()
+        # Custom-painted widget that draws the bg + radial red glow.
+        central = GlowBackground()
         layout = QHBoxLayout(central)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)

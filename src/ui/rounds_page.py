@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 from ..models import Match, Player, PlayerStanding
 from ..tournament import compute_standings
 from .match_card import MatchCard
-from .styles import GREY_DARK, GREY_LIGHT, RED, TEXT, TEXT_DIM
+from .styles import GREY, GREY_DARK, GREY_LIGHT, RED, TEXT, TEXT_DIM
 
 
 class RoundsPage(QWidget):
@@ -111,9 +111,14 @@ class RoundsPage(QWidget):
         cross_rounds = [m for m in self._matches if m.phase == "cross"]
         pools_complete = bool(pool_rounds) and all(m.played for m in pool_rounds)
 
+        # Editorial bicolor title: white prefix + red phase.
+        prefix_white = f"<span style='color:{TEXT};'>"
+        prefix_red = f"<span style='color:{RED};'>"
+        end = "</span>"
+
         if self.session == 1:
             if not pool_rounds:
-                self.title.setText("Session 1 — Phase de poules")
+                self.title.setText(f"{prefix_white}Session 1{end} {prefix_red}Phase de poules{end}")
                 self.subtitle.setText(
                     "Les poules ne sont pas encore tirées. "
                     "Va dans l'onglet \"Joueurs\" pour démarrer."
@@ -121,7 +126,7 @@ class RoundsPage(QWidget):
                 self.action_btn.setVisible(False)
                 return
             if pools_complete and not cross_rounds:
-                self.title.setText("Session 1 — Phase de poules terminée")
+                self.title.setText(f"{prefix_white}Session 1{end} {prefix_red}Phase terminée{end}")
                 self.subtitle.setText(
                     "Tous les matchs de poule sont joués. "
                     "Tu peux générer la Session 2 (phase finale)."
@@ -129,11 +134,11 @@ class RoundsPage(QWidget):
                 self.action_btn.setText("Générer la phase finale")
                 self.action_btn.setVisible(True)
             elif cross_rounds:
-                self.title.setText("Session 1 — Phase de poules")
+                self.title.setText(f"{prefix_white}Session 1{end} {prefix_red}Phase de poules{end}")
                 self.subtitle.setText("La Session 2 (phase finale) est déjà générée.")
                 self.action_btn.setVisible(False)
             else:
-                self.title.setText("Session 1 — Phase de poules")
+                self.title.setText(f"{prefix_white}Session 1{end} {prefix_red}Phase de poules{end}")
                 self.subtitle.setText(
                     "Tours 1 à 5 — chaque joueur rencontre les 5 autres de sa poule."
                 )
@@ -141,14 +146,14 @@ class RoundsPage(QWidget):
         else:
             # Session 2
             if not cross_rounds:
-                self.title.setText("Session 2 — Phase finale")
+                self.title.setText(f"{prefix_white}Session 2{end} {prefix_red}Phase finale{end}")
                 self.subtitle.setText(
                     "La phase finale n'est pas encore générée. Termine la Session 1 "
                     "et clique sur \"Générer la phase finale\"."
                 )
                 self.action_btn.setVisible(False)
                 return
-            self.title.setText("Session 2 — Phase finale")
+            self.title.setText(f"{prefix_white}Session 2{end} {prefix_red}Phase finale{end}")
             self.subtitle.setText(
                 "Tours 6 à 11 — chaque joueur de la poule A affronte tous ceux de la "
                 "poule B. Le tour 11 oppose les joueurs de même rang."
