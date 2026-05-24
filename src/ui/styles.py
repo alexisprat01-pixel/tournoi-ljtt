@@ -5,7 +5,7 @@ Rollback :
   - ``git revert <ce commit>`` revient à l'ancien thème
   - ou ``git checkout pre-editorial-theme`` pour explorer
 """
-from PyQt6.QtCore import QPointF
+from PyQt6.QtCore import QPointF, Qt
 from PyQt6.QtGui import QColor, QPainter, QRadialGradient
 from PyQt6.QtWidgets import QWidget
 
@@ -166,6 +166,8 @@ QTableWidget {{
     selection-background-color: {RED_DARK};
 }}
 QTableWidget::item {{
+    background-color: {GREY};
+    color: {TEXT};
     padding: 6px;
 }}
 QHeaderView::section {{
@@ -178,8 +180,17 @@ QHeaderView::section {{
     letter-spacing: 1px;
 }}
 
+/* Container widgets must be transparent so the radial glow shines through
+   them. Cards, tables and inputs keep their solid background because their
+   selectors are more specific. */
+QStackedWidget {{
+    background-color: transparent;
+}}
 QScrollArea {{
     border: none;
+    background-color: transparent;
+}}
+QScrollArea > QWidget > QWidget {{
     background-color: transparent;
 }}
 QScrollBar:vertical {{
@@ -240,6 +251,12 @@ class GlowBackground(QWidget):
         self._glow = QColor(glow_color)
         self._corner = corner
         self._intensity = intensity
+        # We paint the entire widget surface ourselves — tell Qt to skip
+        # its own background clearing (which would otherwise show the native
+        # palette colour, often white on Windows).
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self.setAutoFillBackground(False)
 
     def paintEvent(self, event):
         p = QPainter(self)
