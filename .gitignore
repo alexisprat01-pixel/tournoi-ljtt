@@ -12,5 +12,6 @@ env/
 .vscode/
 build/
 dist/
+build.log
 *.spec
 !top12.spec
