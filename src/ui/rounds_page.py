@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
 from ..models import Match, Player, PlayerStanding
 from ..tournament import compute_standings
 from .match_card import MatchCard
+from .print_export import open_match_print_preview
 from .styles import GREY, GREY_DARK, GREY_LIGHT, RED, TEXT, TEXT_DIM
 
 
@@ -44,6 +45,12 @@ class RoundsPage(QWidget):
         self.title.setObjectName("h1")
         header.addWidget(self.title)
         header.addStretch()
+        self.print_btn = QPushButton("Imprimer les matchs")
+        self.print_btn.setObjectName("secondary")
+        self.print_btn.setVisible(False)
+        self.print_btn.clicked.connect(self._on_print_clicked)
+        header.addWidget(self.print_btn)
+
         self.action_btn = QPushButton("Générer la phase finale")
         self.action_btn.setVisible(False)
         self.action_btn.clicked.connect(self.generate_cross_requested.emit)
@@ -86,6 +93,13 @@ class RoundsPage(QWidget):
         self._selected_round = round_num
         self._render()
 
+    def _on_print_clicked(self):
+        target_phase = "pool" if self.session == 1 else "cross"
+        session_matches = [m for m in self._matches if m.phase == target_phase]
+        open_match_print_preview(
+            self, session_matches, list(self._players.values()), self.session,
+        )
+
     def _clear_layout(self):
         while self.content_layout.count():
             item = self.content_layout.takeAt(0)
@@ -111,6 +125,11 @@ class RoundsPage(QWidget):
         pool_rounds = [m for m in self._matches if m.phase == "pool"]
         cross_rounds = [m for m in self._matches if m.phase == "cross"]
         pools_complete = bool(pool_rounds) and all(m.played for m in pool_rounds)
+
+        # Print button is visible whenever there is something to print in this session.
+        target_phase = "pool" if self.session == 1 else "cross"
+        has_session_matches = any(m.phase == target_phase for m in self._matches)
+        self.print_btn.setVisible(has_session_matches)
 
         # Editorial bicolor title: white prefix + red phase.
         prefix_white = f"<span style='color:{TEXT};'>"
