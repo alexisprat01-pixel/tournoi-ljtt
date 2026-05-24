@@ -9,7 +9,9 @@ Layout (V4) — 10 strips per A4 page, one match per strip:
 """
 from __future__ import annotations
 
-from PyQt6.QtCore import QRectF, Qt
+import traceback
+
+from PyQt6.QtCore import QMarginsF, QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QPageLayout, QPageSize, QPainter, QPen
 from PyQt6.QtPrintSupport import QPrintPreviewDialog, QPrinter
 from PyQt6.QtWidgets import QMessageBox, QWidget
@@ -50,30 +52,38 @@ def open_match_print_preview(
         )
         return
 
-    printer = QPrinter(QPrinter.PrinterMode.HighResolution)
-    printer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
-    printer.setPageOrientation(QPageLayout.Orientation.Portrait)
-    printer.setPageMargins(
-        PAGE_MARGIN_MM, PAGE_MARGIN_MM, PAGE_MARGIN_MM, PAGE_MARGIN_MM,
-        QPageLayout.Unit.Millimeter,
-    )
-    printer.setDocName(f"top12-session-{session}-matchs")
+    try:
+        printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+        printer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+        printer.setPageOrientation(QPageLayout.Orientation.Portrait)
+        # In Qt 6 setPageMargins expects a QMarginsF, not 4 floats.
+        printer.setPageMargins(
+            QMarginsF(PAGE_MARGIN_MM, PAGE_MARGIN_MM, PAGE_MARGIN_MM, PAGE_MARGIN_MM),
+            QPageLayout.Unit.Millimeter,
+        )
+        printer.setDocName(f"top12-session-{session}-matchs")
 
-    preview = QPrintPreviewDialog(printer, parent)
-    preview.setWindowTitle(f"Imprimer — Session {session}")
-    preview.resize(960, 1120)
+        preview = QPrintPreviewDialog(printer, parent)
+        preview.setWindowTitle(f"Imprimer — Session {session}")
+        preview.resize(960, 1120)
 
-    players_by_id: dict[int, Player] = {p.id: p for p in players}
+        players_by_id: dict[int, Player] = {p.id: p for p in players}
 
-    def paint(printer_obj: QPrinter):
-        painter = QPainter(printer_obj)
-        try:
-            _draw_session(painter, printer_obj, matches, players_by_id, session)
-        finally:
-            painter.end()
+        def paint(printer_obj: QPrinter):
+            painter = QPainter(printer_obj)
+            try:
+                _draw_session(painter, printer_obj, matches, players_by_id, session)
+            finally:
+                painter.end()
 
-    preview.paintRequested.connect(paint)
-    preview.exec()
+        preview.paintRequested.connect(paint)
+        preview.exec()
+    except Exception as e:
+        QMessageBox.critical(
+            parent, "Erreur d'impression",
+            f"Impossible d'ouvrir l'aperçu d'impression :\n\n{e}\n\n"
+            f"{traceback.format_exc()}",
+        )
 
 
 # ----- Rendering -----
@@ -121,7 +131,7 @@ def _draw_strip(
 ):
     # ---- border ----
     painter.setPen(QPen(QColor("#222"), 1.4 * mm_to_px * 0.4))
-    painter.setBrush(Qt.GlobalColor.transparent)
+    painter.setBrush(Qt.BrushStyle.NoBrush)
     painter.drawRoundedRect(rect, 2 * mm_to_px, 2 * mm_to_px)
 
     # Pixels-per-mm shorthand

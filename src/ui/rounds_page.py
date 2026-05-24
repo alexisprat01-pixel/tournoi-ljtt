@@ -45,8 +45,8 @@ class RoundsPage(QWidget):
         self.title.setObjectName("h1")
         header.addWidget(self.title)
         header.addStretch()
-        self.print_btn = QPushButton("Imprimer les matchs")
-        self.print_btn.setObjectName("secondary")
+        # Primary red pill — same prominence as "Générer la phase finale".
+        self.print_btn = QPushButton("🖨  Imprimer les matchs")
         self.print_btn.setVisible(False)
         self.print_btn.clicked.connect(self._on_print_clicked)
         header.addWidget(self.print_btn)
