@@ -335,6 +335,12 @@ class RoundsPage(QWidget):
                 table.setItem(row, col, item)
         table.resizeColumnsToContents()
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        table.verticalHeader().setDefaultSectionSize(40)
-        table.setMinimumHeight(40 + 40 * len(standings))
+        # Lock the table to its natural height so it doesn't expose a scrollbar.
+        row_h = 40
+        for r in range(len(standings)):
+            table.setRowHeight(r, row_h)
+        header_h = table.horizontalHeader().sizeHint().height()
+        table.setFixedHeight(header_h + row_h * len(standings) + 4)
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         return table

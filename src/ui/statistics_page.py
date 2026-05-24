@@ -64,30 +64,35 @@ def _entries(players: list[Player], matches: list[Match]) -> list[dict]:
     ]
 
 
-# ----- Formatters: return one human-readable line per result -----
+# ----- Formatters: return one human-readable HTML line per result -----
+
+def _name(text: str) -> str:
+    """Wrap a player name so it pops typographically (13pt semi-bold) —
+    same treatment as the standings tables."""
+    return f"<span style='font-size:13pt; font-weight:600;'>{text}</span>"
+
 
 def _fmt_marathon(r: dict) -> str:
-    pts = r["points"]
-    sets_ = r["sets"]
-    return f"{r['player'].name} — {pts} points joués · {sets_} sets"
+    return f"{_name(r['player'].name)} — {r['points']} points joués · {r['sets']} sets"
 
 
 def _fmt_defender(r: dict) -> str:
     n = r["sets_lost"]
     plural = "sets perdus" if n != 1 else "set perdu"
-    return f"{r['player'].name} — {n} {plural} (sur {r['played']} matchs)"
+    return f"{_name(r['player'].name)} — {n} {plural} (sur {r['played']} matchs)"
 
 
 def _fmt_trouble(r: dict) -> str:
     return (
-        f"{r['player'].name} — du rang {r['init_rank']} au rang {r['final_rank']} "
-        f"(+{r['progression']} place{'s' if r['progression'] > 1 else ''})"
+        f"{_name(r['player'].name)} — du rang {r['init_rank']} au rang "
+        f"{r['final_rank']} (+{r['progression']} "
+        f"place{'s' if r['progression'] > 1 else ''})"
     )
 
 
 def _fmt_showmen(r: dict) -> str:
-    p1 = r["p1"].name if r["p1"] else "?"
-    p2 = r["p2"].name if r["p2"] else "?"
+    p1 = _name(r["p1"].name) if r["p1"] else "?"
+    p2 = _name(r["p2"].name) if r["p2"] else "?"
     return (
         f"{p1} vs {p2} — {r['points']} points joués · "
         f"{r['sets']} sets ({r['score1']}-{r['score2']})"
@@ -95,8 +100,8 @@ def _fmt_showmen(r: dict) -> str:
 
 
 def _fmt_perf(r: dict) -> str:
-    w = r["winner"].name
-    l = r["loser"].name
+    w = _name(r["winner"].name)
+    l = _name(r["loser"].name)
     return (
         f"{w} a battu {l}  (+{r['diff']} pts d'écart : "
         f"{w} {r['winner'].points} pts vs {l} {r['loser'].points} pts)"

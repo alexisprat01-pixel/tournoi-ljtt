@@ -103,7 +103,12 @@ class GeneralRankingPage(QWidget):
                 table.setItem(row, col, item)
         table.resizeColumnsToContents()
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        # Row height bumped to absorb the larger name font without clipping.
-        table.verticalHeader().setDefaultSectionSize(40)
-        table.setMinimumHeight(40 + 40 * len(standings))
+        # Take exactly the height needed — no scrolling inside a standings table.
+        row_h = 40
+        for r in range(len(standings)):
+            table.setRowHeight(r, row_h)
+        header_h = table.horizontalHeader().sizeHint().height()
+        table.setFixedHeight(header_h + row_h * len(standings) + 4)
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         return table
