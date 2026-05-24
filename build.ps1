@@ -36,13 +36,17 @@ if (Test-Path "dist")  { Remove-Item -Recurse -Force dist }
 
 # 5. Run PyInstaller (silent unless verbose)
 Write-Host "Packaging..." -ForegroundColor Cyan
+# PyInstaller writes INFO lines to stderr. Suspend ErrorActionPreference=Stop
+# during this command so PowerShell doesn't treat those as fatal errors.
+$prevPref = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 if ($Verbose) {
     pyinstaller --noconfirm --clean top12.spec
-    $exitCode = $LASTEXITCODE
 } else {
-    pyinstaller --noconfirm --clean top12.spec 2>&1 | Out-File $logFile -Encoding utf8 -Append
-    $exitCode = $LASTEXITCODE
+    pyinstaller --noconfirm --clean top12.spec *>> $logFile
 }
+$exitCode = $LASTEXITCODE
+$ErrorActionPreference = $prevPref
 
 # 6. Report
 $exe = Join-Path -Path (Get-Location) -ChildPath "dist\Top12.exe"

@@ -14,24 +14,27 @@ import traceback
 from PyQt6.QtCore import QMarginsF, QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QPageLayout, QPageSize, QPainter, QPen
 from PyQt6.QtPrintSupport import QPrintPreviewDialog, QPrinter
-from PyQt6.QtWidgets import QMessageBox, QWidget
+from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from ..models import Match, Player
 
 
 TABLE_COLORS = {1: "#C8102E", 2: "#1E88E5", 3: "#43A047"}
 
-# Strip layout (everything in millimetres). Tweak here for cell size, font…
-STRIPS_PER_PAGE = 10
-STRIP_GAP_MM = 1.5
-PAGE_MARGIN_MM = 12
-TABLE_CHIP_W_MM = 10
-ROUND_BADGE_W_MM = 8
-NAMES_W_MM = 60
-CELL_W_MM = 11
+# Strip layout (everything in millimetres). Grid: COLS_PER_PAGE × ROWS_PER_PAGE.
+COLS_PER_PAGE = 2
+ROWS_PER_PAGE = 10
+STRIPS_PER_PAGE = COLS_PER_PAGE * ROWS_PER_PAGE   # = 20
+PAGE_MARGIN_MM = 10
+COL_GAP_MM = 4
+ROW_GAP_MM = 1.5
+TABLE_CHIP_W_MM = 8
+ROUND_BADGE_W_MM = 6
+NAMES_W_MM = 30
+CELL_W_MM = 6
 N_CELLS = 5
 GRID_W_MM = CELL_W_MM * N_CELLS
-REF_W_MM = 45
+REF_W_MM = 24
 
 
 def open_match_print_preview(
@@ -52,6 +55,8 @@ def open_match_print_preview(
         )
         return
 
+    app = QApplication.instance()
+    saved_stylesheet = app.styleSheet() if app else ""
     try:
         printer = QPrinter(QPrinter.PrinterMode.HighResolution)
         printer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
@@ -62,6 +67,12 @@ def open_match_print_preview(
             QPageLayout.Unit.Millimeter,
         )
         printer.setDocName(f"top12-session-{session}-matchs")
+
+        # Temporarily drop the app's stylesheet — it makes the QPrintPreviewDialog
+        # toolbar buttons (Print, Save PDF, etc.) invisible because every QWidget
+        # inherits white text on dark bg + the toolbar icons don't adapt.
+        if app:
+            app.setStyleSheet("")
 
         preview = QPrintPreviewDialog(printer, parent)
         preview.setWindowTitle(f"Imprimer — Session {session}")
@@ -84,6 +95,9 @@ def open_match_print_preview(
             f"Impossible d'ouvrir l'aperçu d'impression :\n\n{e}\n\n"
             f"{traceback.format_exc()}",
         )
+    finally:
+        if app:
+            app.setStyleSheet(saved_stylesheet)
 
 
 # ----- Rendering -----
@@ -97,9 +111,7 @@ def _draw_session(
 ):
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    # Work in millimetres regardless of the device DPI.
     page_rect_mm = printer.pageLayout().paintRect(QPageLayout.Unit.Millimeter)
-    # The page rect already excludes the margin; treat its top-left as (0, 0).
     page_w_mm = page_rect_mm.width()
     page_h_mm = page_rect_mm.height()
 
@@ -110,15 +122,21 @@ def _draw_session(
         return QRectF(x_mm * mm_to_px, y_mm * mm_to_px,
                       w_mm * mm_to_px, h_mm * mm_to_px)
 
-    strip_h_mm = page_h_mm / STRIPS_PER_PAGE
+    # Grid of COLS_PER_PAGE × ROWS_PER_PAGE strips with gaps in between.
+    total_col_gap = COL_GAP_MM * (COLS_PER_PAGE - 1)
+    col_w_mm = (page_w_mm - total_col_gap) / COLS_PER_PAGE
+    row_h_mm = page_h_mm / ROWS_PER_PAGE
 
     for i, m in enumerate(matches):
         slot = i % STRIPS_PER_PAGE
         if i > 0 and slot == 0:
             printer.newPage()
+        row = slot // COLS_PER_PAGE
+        col = slot % COLS_PER_PAGE
 
-        y_mm = slot * strip_h_mm + STRIP_GAP_MM / 2
-        strip = mm_rect(0, y_mm, page_w_mm, strip_h_mm - STRIP_GAP_MM)
+        x_mm = col * (col_w_mm + COL_GAP_MM)
+        y_mm = row * row_h_mm + ROW_GAP_MM / 2
+        strip = mm_rect(x_mm, y_mm, col_w_mm, row_h_mm - ROW_GAP_MM)
         _draw_strip(painter, strip, m, players_by_id, mm_to_px)
 
 
@@ -129,17 +147,16 @@ def _draw_strip(
     players_by_id: dict[int, Player],
     mm_to_px: float,
 ):
+    M = mm_to_px  # pixels-per-mm shorthand
+
     # ---- border ----
-    painter.setPen(QPen(QColor("#222"), 1.4 * mm_to_px * 0.4))
+    painter.setPen(QPen(QColor("#222"), 0.4 * M))
     painter.setBrush(Qt.BrushStyle.NoBrush)
-    painter.drawRoundedRect(rect, 2 * mm_to_px, 2 * mm_to_px)
+    painter.drawRoundedRect(rect, 1.5 * M, 1.5 * M)
 
-    # Pixels-per-mm shorthand
-    M = mm_to_px
-
-    pad = 2 * M
-    inner_top = rect.top() + 1.5 * M
-    inner_bot = rect.bottom() - 1.5 * M
+    pad = 1.2 * M
+    inner_top = rect.top() + 1 * M
+    inner_bot = rect.bottom() - 1 * M
     inner_h = inner_bot - inner_top
 
     # ---- table chip ----
@@ -148,28 +165,28 @@ def _draw_strip(
     color = QColor(TABLE_COLORS.get(match.table_number, "#666"))
     painter.fillRect(chip, color)
     painter.setPen(QColor("white"))
-    painter.setFont(QFont("Arial", int(M * 4), QFont.Weight.Bold))
+    painter.setFont(QFont("Arial", int(M * 2.6), QFont.Weight.Bold))
     painter.drawText(chip, Qt.AlignmentFlag.AlignCenter, f"T{match.table_number}")
 
     # ---- round badge ----
-    round_x = chip.right() + 2 * M
+    round_x = chip.right() + 1 * M
     round_rect = QRectF(round_x, inner_top, ROUND_BADGE_W_MM * M, inner_h)
     painter.setPen(QColor("#555"))
-    painter.setFont(QFont("Arial", int(M * 3), QFont.Weight.Bold))
+    painter.setFont(QFont("Arial", int(M * 2), QFont.Weight.Bold))
     painter.drawText(round_rect, Qt.AlignmentFlag.AlignCenter,
                      f"R{match.round_number}")
 
     # ---- player names (stacked, aligned with score rows) ----
     p1 = players_by_id.get(match.player1_id)
     p2 = players_by_id.get(match.player2_id)
-    names_x = round_rect.right() + 2 * M
+    names_x = round_rect.right() + 1.2 * M
     names_w = NAMES_W_MM * M
     row_h = inner_h / 2
     p1_rect = QRectF(names_x, inner_top, names_w, row_h)
     p2_rect = QRectF(names_x, inner_top + row_h, names_w, row_h)
 
     painter.setPen(QColor("#000"))
-    painter.setFont(QFont("Arial", int(M * 3.8), QFont.Weight.Bold))
+    painter.setFont(QFont("Arial", int(M * 2.4), QFont.Weight.Bold))
     if p1:
         painter.drawText(p1_rect,
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
@@ -180,10 +197,10 @@ def _draw_strip(
                          p2.name)
 
     # ---- score grid (5 sets × 2 rows) ----
-    grid_x = names_x + names_w + 2 * M
+    grid_x = names_x + names_w + 1.2 * M
     grid_w = GRID_W_MM * M
     cell_w = grid_w / N_CELLS
-    painter.setPen(QPen(QColor("#000"), 1.0))
+    painter.setPen(QPen(QColor("#000"), 0.4 * M))
     for col in range(N_CELLS):
         for row in range(2):
             cell = QRectF(grid_x + col * cell_w, inner_top + row * row_h,
@@ -192,9 +209,9 @@ def _draw_strip(
 
     # ---- referee on the right ----
     ref = players_by_id.get(match.referee_id) if match.referee_id else None
-    ref_x = grid_x + grid_w + 3 * M
+    ref_x = grid_x + grid_w + 1.5 * M
     ref_w = rect.right() - ref_x - pad
-    painter.setFont(QFont("Arial", int(M * 3), QFont.Weight.Normal))
+    painter.setFont(QFont("Arial", int(M * 1.9), QFont.Weight.Normal))
     painter.setPen(QColor("#555"))
     ref_text = f"Arb. {ref.name}" if ref else ""
     painter.drawText(QRectF(ref_x, inner_top, ref_w, inner_h),
