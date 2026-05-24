@@ -440,16 +440,15 @@ def compute_standings(
         s1.sets_lost += m.score2
         s2.sets_won += m.score2
         s2.sets_lost += m.score1
+        # Scoring: win = 1 point, loss = 0 point.
         if m.score1 > m.score2:
             s1.wins += 1
-            s1.points += 2
+            s1.points += 1
             s2.losses += 1
-            s2.points += 1
         elif m.score2 > m.score1:
             s2.wins += 1
-            s2.points += 2
+            s2.points += 1
             s1.losses += 1
-            s1.points += 1
 
     standings = list(by_id.values())
     return _rank_with_tiebreaks(standings, played_matches)

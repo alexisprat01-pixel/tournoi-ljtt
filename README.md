@@ -39,11 +39,14 @@ La base SQLite est créée dans `%USERPROFILE%\.top12\top12.db` (persistée entr
 
 | Résultat        | Points |
 |-----------------|--------|
-| Victoire        | 2      |
-| Défaite         | 1      |
+| Victoire        | 1      |
+| Défaite         | 0      |
 | Forfait / 0‑0   | 0      |
 
-Départage : différence de sets, puis sets gagnés, puis nom.
+Départage :
+1. Si 2 joueurs sont à égalité → vainqueur du face‑à‑face passe devant.
+2. Si 3+ joueurs sont à égalité → différentiel de sets (sets gagnés − sets perdus).
+3. Si après ce départage il reste 2 joueurs à égalité → on revient au face‑à‑face.
 
 ## Distribution — Top12.exe autonome
 
