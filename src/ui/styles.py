@@ -50,25 +50,26 @@ QMainWindow {{
     border-right: 1px solid {GREY_LIGHT};
 }}
 
-/* Sidebar nav buttons — pill style, active = red filled */
+/* Sidebar nav buttons — flat with left accent on active (matches the section
+   headers TOURNOI / NAVIGATION / ACTIONS). No filled background to keep the
+   sidebar quiet and readable. */
 #sidebar QPushButton {{
     background-color: transparent;
     color: {TEXT_DIM};
     text-align: left;
     padding: 10px 18px;
     border: none;
-    border-radius: {PILL_RADIUS}px;
+    border-left: 3px solid transparent;
     font-size: 11pt;
-    margin: 2px 12px;
 }}
 #sidebar QPushButton:hover {{
-    background-color: {GREY};
     color: {TEXT};
 }}
 #sidebar QPushButton:checked {{
-    background-color: {RED};
-    color: white;
+    background-color: transparent;
+    color: {RED};
     font-weight: bold;
+    border-left: 3px solid {RED};
 }}
 
 #sidebarLogo {{
