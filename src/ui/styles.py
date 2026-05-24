@@ -209,10 +209,16 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
     height: 0;
 }}
 
+/* Dialogs use a solid graphite bg (no glow) so they read clearly above the
+   main window's hero glow. */
+QDialog {{
+    background-color: {GREY_DARK};
+}}
 QMessageBox {{
     background-color: {GREY_DARK};
 }}
-QMessageBox QLabel {{
+QMessageBox QLabel,
+QDialog QLabel {{
     color: {TEXT};
 }}
 
