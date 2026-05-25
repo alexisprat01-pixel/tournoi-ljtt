@@ -1,12 +1,28 @@
-"""Data models for the Top12 tournament."""
+"""Data models for the LJTT tournaments app."""
 from dataclasses import dataclass, field
 from typing import Optional
+
+
+# Known tournament types. Used in the creation dialog combo and in the DB.
+# Add new entries here when new formats are implemented.
+TOURNAMENT_TYPES: list[tuple[str, str]] = [
+    ("top12", "Top 12"),
+]
+
+
+def tournament_type_label(code: str) -> str:
+    """Return the human-readable label for a tournament type code."""
+    for c, label in TOURNAMENT_TYPES:
+        if c == code:
+            return label
+    return code  # fall back to the raw code if unknown
 
 
 @dataclass
 class Tournament:
     id: int
     name: str
+    tournament_type: str = "top12"   # code from TOURNAMENT_TYPES
     event_date: str = ""    # ISO format "YYYY-MM-DD" or ""
     notes: str = ""
     created_at: str = ""    # ISO datetime

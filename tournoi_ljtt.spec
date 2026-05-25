@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for Top12 — produces a single self-contained Windows .exe."""
+"""PyInstaller spec for Tournoi LJTT — produces a single self-contained Windows .exe."""
 from pathlib import Path
 
 SPEC_DIR = Path(SPECPATH)
@@ -54,7 +54,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='Top12',
+    name='TournoiLJTT',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

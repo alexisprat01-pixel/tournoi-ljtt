@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
         self._general_page: GeneralRankingPage | None = None
         self._stats_page: StatisticsPage | None = None
 
-        self.setWindowTitle("Top12 — Gestion de tournoi")
+        self.setWindowTitle("Tournoi LJTT — Gestion de tournoi")
         self.setMinimumSize(1100, 720)
         self.setStyleSheet(STYLESHEET)
 
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
             logo_label.setText("⬤")
             logo_label.setStyleSheet(f"color:{RED}; font-size:18pt; background:transparent;")
         sv.addWidget(logo_label)
-        brand = QLabel("TOP 12")
+        brand = QLabel("LJTT")
         brand.setStyleSheet(f"color:{RED}; font-size:13pt; font-weight:bold; background:transparent;")
         sv.addWidget(brand)
         sv.addStretch()
@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
         self.home_page.refresh()
         self._set_tournament_sidebar_visible(False)
         self.stack.setCurrentIndex(0)
-        self.setWindowTitle("Top12 — Gestion de tournoi")
+        self.setWindowTitle("Tournoi LJTT — Gestion de tournoi")
 
     def _open_tournament(self, tournament_id: int):
         t = self.db.get_tournament(tournament_id)
@@ -253,7 +253,7 @@ class MainWindow(QMainWindow):
             self.btn_players.setChecked(True)
             self.stack.setCurrentIndex(1)
 
-        self.setWindowTitle(f"Top12 — {t.name}")
+        self.setWindowTitle(f"Tournoi LJTT — {t.name}")
 
     def _backfill_assignments_if_needed(self, tournament_id: int):
         """Fix table/referee assignments when they are missing OR violate the per-session
@@ -499,11 +499,11 @@ class MainWindow(QMainWindow):
         dlg = TournamentDialog(self, tournament=self._current_tournament)
         if dlg.exec() != dlg.DialogCode.Accepted:
             return
-        name, event_date, notes = dlg.get_values()
-        self.db.update_tournament(self._current_tournament.id, name, event_date, notes)
+        name, event_date, notes, tournament_type = dlg.get_values()
+        self.db.update_tournament(self._current_tournament.id, name, event_date, notes, tournament_type)
         self._current_tournament = self.db.get_tournament(self._current_tournament.id)
         self._update_context_label()
-        self.setWindowTitle(f"Top12 — {self._current_tournament.name}")
+        self.setWindowTitle(f"Tournoi LJTT — {self._current_tournament.name}")
         self.home_page.refresh()
 
     def _on_reset_current(self):

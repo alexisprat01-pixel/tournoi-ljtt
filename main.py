@@ -1,4 +1,5 @@
-"""Top12 — Application de gestion de tournoi de tennis de table."""
+"""Tournoi LJTT — Application de gestion de tournois de tennis de table."""
+import shutil
 import sys
 from pathlib import Path
 
@@ -25,16 +26,36 @@ def _apply_windows_taskbar_icon():
         return
     try:
         import ctypes
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("club.top12.app")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("club.ljtt.tournoi")
     except Exception:
         pass  # not fatal — icon may just fall back to the default group
+
+
+def _resolve_data_dir() -> Path:
+    """Use ~/.tournoi-ljtt/ as the canonical data directory.
+
+    If only the legacy ~/.top12/ exists, migrate its top12.db over once so
+    that users who already used the previous build don't lose their work.
+    The legacy directory is left untouched — manual cleanup if needed.
+    """
+    new_dir = Path.home() / ".tournoi-ljtt"
+    new_dir.mkdir(exist_ok=True)
+    new_db = new_dir / "tournoi-ljtt.db"
+
+    legacy_db = Path.home() / ".top12" / "top12.db"
+    if not new_db.exists() and legacy_db.exists():
+        try:
+            shutil.copy2(legacy_db, new_db)
+        except OSError:
+            pass  # if copy fails we'll just start with an empty DB
+    return new_dir
 
 
 def main():
     _apply_windows_taskbar_icon()
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Top12")
+    app.setApplicationName("Tournoi LJTT")
 
     assets = _assets_dir()
     icon_path = assets / "icon.ico"
@@ -43,9 +64,8 @@ def main():
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
 
-    data_dir = Path.home() / ".top12"
-    data_dir.mkdir(exist_ok=True)
-    db = Database(data_dir / "top12.db")
+    data_dir = _resolve_data_dir()
+    db = Database(data_dir / "tournoi-ljtt.db")
 
     window = MainWindow(db)
     window.show()

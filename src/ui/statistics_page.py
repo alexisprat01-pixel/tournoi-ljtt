@@ -124,7 +124,7 @@ class StatisticsPage(QWidget):
         head = QVBoxLayout()
         head.setContentsMargins(32, 24, 32, 0)
         title = QLabel(
-            f"<span style='color:{TEXT};'>Top12</span> "
+            f"<span style='color:{TEXT};'>Tournoi</span> "
             f"<span style='color:{RED};'>Statistiques</span>"
         )
         title.setObjectName("h1")

@@ -15,12 +15,13 @@ from .models import Match, Player, Tournament
 # that the migration is responsible for adding.
 SCHEMA_TABLES = """
 CREATE TABLE IF NOT EXISTS tournaments (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT NOT NULL,
-    event_date  TEXT DEFAULT '',
-    notes       TEXT DEFAULT '',
-    created_at  TEXT NOT NULL,
-    updated_at  TEXT NOT NULL
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT NOT NULL,
+    tournament_type TEXT DEFAULT 'top12',
+    event_date      TEXT DEFAULT '',
+    notes           TEXT DEFAULT '',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS players (
@@ -87,6 +88,12 @@ class Database:
         """
         players_cols = {r["name"] for r in conn.execute("PRAGMA table_info(players)").fetchall()}
         matches_cols = {r["name"] for r in conn.execute("PRAGMA table_info(matches)").fetchall()}
+        tournaments_cols = {r["name"] for r in conn.execute("PRAGMA table_info(tournaments)").fetchall()}
+
+        # --- tournament_type (v5 → v6, generalise app to multiple formats) ---
+        if "tournament_type" not in tournaments_cols:
+            conn.execute("ALTER TABLE tournaments ADD COLUMN tournament_type TEXT DEFAULT 'top12'")
+            conn.execute("UPDATE tournaments SET tournament_type='top12' WHERE tournament_type IS NULL")
 
         # --- tournament_id (v1 → v2) ---
         added_tournament_col = False
@@ -139,24 +146,28 @@ class Database:
             conn.close()
 
     # ----- Tournaments -----
-    def create_tournament(self, name: str, event_date: str = "", notes: str = "") -> Tournament:
+    def create_tournament(self, name: str, event_date: str = "", notes: str = "",
+                          tournament_type: str = "top12") -> Tournament:
         now = _now()
         with self._connect() as conn:
             cur = conn.execute(
-                "INSERT INTO tournaments(name, event_date, notes, created_at, updated_at) VALUES(?,?,?,?,?)",
-                (name, event_date, notes, now, now),
+                "INSERT INTO tournaments(name, tournament_type, event_date, notes, created_at, updated_at) "
+                "VALUES(?,?,?,?,?,?)",
+                (name, tournament_type, event_date, notes, now, now),
             )
-            return Tournament(id=cur.lastrowid, name=name, event_date=event_date,
-                              notes=notes, created_at=now, updated_at=now)
+            return Tournament(id=cur.lastrowid, name=name, tournament_type=tournament_type,
+                              event_date=event_date, notes=notes,
+                              created_at=now, updated_at=now)
 
     def list_tournaments(self) -> List[Tournament]:
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT id, name, event_date, notes, created_at, updated_at "
+                "SELECT id, name, tournament_type, event_date, notes, created_at, updated_at "
                 "FROM tournaments ORDER BY datetime(updated_at) DESC"
             ).fetchall()
         return [Tournament(
             id=r["id"], name=r["name"],
+            tournament_type=r["tournament_type"] or "top12",
             event_date=r["event_date"] or "", notes=r["notes"] or "",
             created_at=r["created_at"], updated_at=r["updated_at"],
         ) for r in rows]
@@ -164,23 +175,32 @@ class Database:
     def get_tournament(self, tournament_id: int) -> Optional[Tournament]:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT id, name, event_date, notes, created_at, updated_at "
+                "SELECT id, name, tournament_type, event_date, notes, created_at, updated_at "
                 "FROM tournaments WHERE id=?", (tournament_id,)
             ).fetchone()
         if row is None:
             return None
         return Tournament(
             id=row["id"], name=row["name"],
+            tournament_type=row["tournament_type"] or "top12",
             event_date=row["event_date"] or "", notes=row["notes"] or "",
             created_at=row["created_at"], updated_at=row["updated_at"],
         )
 
-    def update_tournament(self, tournament_id: int, name: str, event_date: str, notes: str):
+    def update_tournament(self, tournament_id: int, name: str, event_date: str, notes: str,
+                          tournament_type: str | None = None):
         with self._connect() as conn:
-            conn.execute(
-                "UPDATE tournaments SET name=?, event_date=?, notes=?, updated_at=? WHERE id=?",
-                (name, event_date, notes, _now(), tournament_id),
-            )
+            if tournament_type is None:
+                conn.execute(
+                    "UPDATE tournaments SET name=?, event_date=?, notes=?, updated_at=? WHERE id=?",
+                    (name, event_date, notes, _now(), tournament_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE tournaments SET name=?, tournament_type=?, event_date=?, notes=?, updated_at=? "
+                    "WHERE id=?",
+                    (name, tournament_type, event_date, notes, _now(), tournament_id),
+                )
 
     def delete_tournament(self, tournament_id: int):
         with self._connect() as conn:

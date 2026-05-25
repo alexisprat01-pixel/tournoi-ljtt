@@ -1,4 +1,4 @@
-# Build Top12.exe — single-file Windows executable
+# Build TournoiLJTT.exe — single-file Windows executable
 # Usage:
 #   .\build.ps1            (silencieux, juste le résultat)
 #   .\build.ps1 -Verbose   (affiche tout le log PyInstaller)
@@ -10,7 +10,7 @@ param([switch]$Verbose)
 $ErrorActionPreference = 'Stop'
 $logFile = "build.log"
 
-Write-Host "=== Top12 build ===" -ForegroundColor Red
+Write-Host "=== Tournoi LJTT build ===" -ForegroundColor Red
 
 # 1. Ensure venv exists
 if (-not (Test-Path ".venv")) {
@@ -41,15 +41,15 @@ Write-Host "Packaging..." -ForegroundColor Cyan
 $prevPref = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 if ($Verbose) {
-    pyinstaller --noconfirm --clean top12.spec
+    pyinstaller --noconfirm --clean tournoi_ljtt.spec
 } else {
-    pyinstaller --noconfirm --clean top12.spec *>> $logFile
+    pyinstaller --noconfirm --clean tournoi_ljtt.spec *>> $logFile
 }
 $exitCode = $LASTEXITCODE
 $ErrorActionPreference = $prevPref
 
 # 6. Report
-$exe = Join-Path -Path (Get-Location) -ChildPath "dist\Top12.exe"
+$exe = Join-Path -Path (Get-Location) -ChildPath "dist\TournoiLJTT.exe"
 if ($exitCode -eq 0 -and (Test-Path $exe)) {
     $size = [Math]::Round((Get-Item $exe).Length / 1MB, 1)
     Write-Host "OK -> $exe  ($size Mo)" -ForegroundColor Green

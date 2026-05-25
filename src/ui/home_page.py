@@ -203,8 +203,8 @@ class HomePage(QWidget):
         dlg = TournamentDialog(self)
         if dlg.exec() != dlg.DialogCode.Accepted:
             return
-        name, event_date, notes = dlg.get_values()
-        t = self.db.create_tournament(name, event_date, notes)
+        name, event_date, notes, tournament_type = dlg.get_values()
+        t = self.db.create_tournament(name, event_date, notes, tournament_type)
         self.refresh()
         self.open_requested.emit(t.id)
 
@@ -224,8 +224,8 @@ class HomePage(QWidget):
         dlg = TournamentDialog(self, tournament=t)
         if dlg.exec() != dlg.DialogCode.Accepted:
             return
-        name, event_date, notes = dlg.get_values()
-        self.db.update_tournament(tid, name, event_date, notes)
+        name, event_date, notes, tournament_type = dlg.get_values()
+        self.db.update_tournament(tid, name, event_date, notes, tournament_type)
         self.refresh()
 
     def _on_delete_selected(self):

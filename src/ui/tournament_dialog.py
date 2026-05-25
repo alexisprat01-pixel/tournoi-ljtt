@@ -4,11 +4,11 @@ from __future__ import annotations
 from PyQt6.QtCore import QDate, Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
-    QCheckBox, QDateEdit, QDialog, QFormLayout, QHBoxLayout, QLabel, QLineEdit,
-    QMessageBox, QPushButton, QTextEdit, QToolButton, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDateEdit, QDialog, QFormLayout, QHBoxLayout, QLabel,
+    QLineEdit, QMessageBox, QPushButton, QTextEdit, QToolButton, QVBoxLayout, QWidget,
 )
 
-from ..models import Tournament
+from ..models import TOURNAMENT_TYPES, Tournament
 from .styles import RED, TEXT, TEXT_DIM
 
 
@@ -61,6 +61,13 @@ class TournamentDialog(QDialog):
         self.name_edit.setPlaceholderText("Ex : Top12 — saison 2026")
         form.addRow(self._field_label("Nom du tournoi *"), self.name_edit)
 
+        # Tournament format combo — currently only "Top 12" but the list will
+        # grow as more formats are implemented.
+        self.type_combo = QComboBox()
+        for code, label in TOURNAMENT_TYPES:
+            self.type_combo.addItem(label, code)
+        form.addRow(self._field_label("Type de tournoi *"), self.type_combo)
+
         self.date_edit = QDateEdit()
         self.date_edit.setCalendarPopup(True)
         self.date_edit.setDisplayFormat("dd/MM/yyyy")
@@ -81,6 +88,11 @@ class TournamentDialog(QDialog):
 
         if tournament is not None:
             self.name_edit.setText(tournament.name)
+            # Select the right type in the combo
+            for i in range(self.type_combo.count()):
+                if self.type_combo.itemData(i) == tournament.tournament_type:
+                    self.type_combo.setCurrentIndex(i)
+                    break
             if tournament.event_date:
                 try:
                     y, m, d = (int(x) for x in tournament.event_date.split("-"))
@@ -136,11 +148,13 @@ class TournamentDialog(QDialog):
             return
         self.accept()
 
-    def get_values(self) -> tuple[str, str, str]:
+    def get_values(self) -> tuple[str, str, str, str]:
+        """Return (name, event_date, notes, tournament_type)."""
         name = self.name_edit.text().strip()
         if self.no_date_check.isChecked():
             event_date = ""
         else:
             event_date = self.date_edit.date().toString("yyyy-MM-dd")
         notes = self.notes_edit.toPlainText().strip()
-        return name, event_date, notes
+        tournament_type = self.type_combo.currentData() or "top12"
+        return name, event_date, notes, tournament_type

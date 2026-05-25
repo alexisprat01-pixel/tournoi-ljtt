@@ -66,7 +66,7 @@ def open_match_print_preview(
             QMarginsF(PAGE_MARGIN_MM, PAGE_MARGIN_MM, PAGE_MARGIN_MM, PAGE_MARGIN_MM),
             QPageLayout.Unit.Millimeter,
         )
-        printer.setDocName(f"top12-session-{session}-matchs")
+        printer.setDocName(f"tournoi-ljtt-session-{session}-matchs")
 
         # Temporarily drop the app's stylesheet — it makes the QPrintPreviewDialog
         # toolbar buttons (Print, Save PDF, etc.) invisible because every QWidget
