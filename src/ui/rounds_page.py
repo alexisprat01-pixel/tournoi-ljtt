@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QFontMetrics
 from PyQt6.QtWidgets import (
     QAbstractScrollArea, QFrame, QHBoxLayout, QHeaderView, QLabel, QPushButton,
     QScrollArea, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
@@ -356,7 +356,6 @@ class RoundsPage(QWidget):
                 if col != 1:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 table.setItem(row, col, item)
-        table.resizeRowsToContents()
         header = table.horizontalHeader()
         for col in range(table.columnCount()):
             mode = (
@@ -367,10 +366,19 @@ class RoundsPage(QWidget):
         table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         table.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        # Compute the exact height (header + rows + frame). AdjustToContents
-        # under-estimates the header height when QSS adds padding, which makes
-        # the header bleed into row 1 and shifts the column visually.
-        header_h = header.sizeHint().height()
-        rows_h = sum(table.rowHeight(r) for r in range(table.rowCount()))
-        table.setFixedHeight(header_h + rows_h + 2 * table.frameWidth())
+        # Deterministic row height based on the (largest) font used in rows.
+        # Same value for every standings table, so pools A and B align perfectly.
+        fm = QFontMetrics(name_font)
+        row_h = fm.height() + 14  # vertical padding around the text
+        vh = table.verticalHeader()
+        vh.setDefaultSectionSize(row_h)
+        vh.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        # Header height: take a generous max between sizeHint and font-derived,
+        # so QSS padding never pushes content into row 1.
+        header_fm = QFontMetrics(table.font())
+        header_h = max(header.sizeHint().height(), header_fm.height() + 18)
+        header.setFixedHeight(header_h)
+        table.setFixedHeight(
+            header_h + row_h * table.rowCount() + 2 * table.frameWidth()
+        )
         return table
