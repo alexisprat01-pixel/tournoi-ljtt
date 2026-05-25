@@ -238,12 +238,16 @@ QFrame#card {{
 }}
 
 QTableWidget {{
-    background-color: {GREY};
+    background-color: transparent;
     color: {TEXT};
     gridline-color: {GREY_LIGHT};
+    border: none;
+    selection-background-color: {RED_DARK};
+}}
+QFrame#tableWrap {{
+    background-color: {GREY};
     border: 1px solid {GREY_LIGHT};
     border-radius: {CARD_RADIUS}px;
-    selection-background-color: {RED_DARK};
 }}
 QTableWidget::item {{
     background-color: transparent;

@@ -292,7 +292,7 @@ class RoundsPage(QWidget):
         header.setObjectName("h2")
         v.addWidget(header)
         standings = compute_standings(self._players.values(), self._matches)
-        v.addWidget(self._standings_table(standings))
+        v.addWidget(self._wrap_table(self._standings_table(standings)))
         return wrapper
 
     # ----- Pool standings (Session 1) -----
@@ -314,14 +314,14 @@ class RoundsPage(QWidget):
             lbl = QLabel(f"Poule {pool}")
             lbl.setObjectName("h2")
             box.addWidget(lbl)
-            box.addWidget(self._standings_table(
+            box.addWidget(self._wrap_table(self._standings_table(
                 compute_standings(
                     self._players.values(),
                     self._matches,
                     pool=pool,
                     max_round=5,
                 )
-            ))
+            )))
             box.addStretch(1)  # keep both columns aligned to the top
             cnt = QWidget()
             cnt.setLayout(box)
@@ -331,6 +331,21 @@ class RoundsPage(QWidget):
         row_w.setLayout(row)
         v.addWidget(row_w)
         return wrapper
+
+    @staticmethod
+    def _wrap_table(table: QTableWidget) -> QFrame:
+        """Wrap a table inside a rounded QFrame so the bottom corners
+        clip the table's rectangular viewport cleanly."""
+        wrap = QFrame()
+        wrap.setObjectName("tableWrap")
+        lay = QVBoxLayout(wrap)
+        # 1px padding so the table sits inside the frame's rounded border.
+        lay.setContentsMargins(1, 1, 1, 1)
+        lay.setSpacing(0)
+        lay.addWidget(table)
+        # Match the wrap's height to the table's fixed height + padding.
+        wrap.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        return wrap
 
     @staticmethod
     def _standings_table(standings: list[PlayerStanding]) -> QTableWidget:
@@ -366,6 +381,10 @@ class RoundsPage(QWidget):
         table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         table.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        # Make the viewport transparent so the rounded wrap frame shows through.
+        table.viewport().setAutoFillBackground(False)
+        table.viewport().setStyleSheet("background: transparent;")
+        table.setFrameShape(QFrame.Shape.NoFrame)
         # Deterministic row height based on the (largest) font used in rows.
         # Same value for every standings table, so pools A and B align perfectly.
         fm = QFontMetrics(name_font)
