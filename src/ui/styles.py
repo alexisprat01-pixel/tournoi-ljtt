@@ -259,6 +259,19 @@ QHeaderView::section {{
     font-weight: bold;
     letter-spacing: 1px;
 }}
+/* Round the outer corners of the header so it doesn't paint square
+   over the table's rounded card. */
+QHeaderView::section:first {{
+    border-top-left-radius: {CARD_RADIUS}px;
+}}
+QHeaderView::section:last {{
+    border-top-right-radius: {CARD_RADIUS}px;
+}}
+QTableCornerButton::section {{
+    background-color: {GREY_DARK};
+    border: none;
+    border-top-left-radius: {CARD_RADIUS}px;
+}}
 
 /* Container widgets must be transparent so the radial glow shines through
    them. Cards, tables and inputs keep their solid background because their
