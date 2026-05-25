@@ -223,13 +223,27 @@ def _draw_strip(
                           cell_w, row_h)
             painter.drawRect(cell)
 
-    # ---- referee on the right ----
+    # ---- referee on the right (3 lines: "Arb." / prénom / nom) ----
     ref = players_by_id.get(match.referee_id) if match.referee_id else None
     ref_x = grid_x + grid_w + 1.5 * M
     ref_w = rect.right() - ref_x - pad
-    painter.setFont(QFont("Arial", 7, QFont.Weight.Normal))
+    line_h = inner_h / 3
     painter.setPen(QColor("#555"))
-    ref_text = f"Arb. {ref.name}" if ref else ""
-    painter.drawText(QRectF(ref_x, inner_top, ref_w, inner_h),
+    # "Arb." label on top
+    painter.setFont(QFont("Arial", 6, QFont.Weight.Normal))
+    painter.drawText(QRectF(ref_x, inner_top, ref_w, line_h),
                      Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
-                     ref_text)
+                     "Arb." if ref else "")
+    if ref:
+        # Split on first space: first token = prénom, reste = nom
+        parts = ref.name.strip().split(" ", 1)
+        prenom = parts[0]
+        nom = parts[1] if len(parts) > 1 else ""
+        painter.setFont(QFont("Arial", 7, QFont.Weight.Bold))
+        painter.setPen(QColor("#000"))
+        painter.drawText(QRectF(ref_x, inner_top + line_h, ref_w, line_h),
+                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                         prenom)
+        painter.drawText(QRectF(ref_x, inner_top + 2 * line_h, ref_w, line_h),
+                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                         nom)
