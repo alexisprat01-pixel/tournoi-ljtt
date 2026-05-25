@@ -1,16 +1,20 @@
 """Overall standings page — all 12 players, all matches, tie-break rules applied."""
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import QRectF, Qt
+from PyQt6.QtGui import QFont, QFontMetrics, QPainterPath, QRegion
 from PyQt6.QtWidgets import (
-    QAbstractScrollArea, QHBoxLayout, QHeaderView, QLabel, QSizePolicy,
-    QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QFrame, QHeaderView, QLabel, QSizePolicy, QTableWidget, QTableWidgetItem,
+    QVBoxLayout, QWidget,
 )
 
 from ..models import Match, Player, PlayerStanding
 from ..tournament import compute_standings
 from .styles import RED, TEXT
+
+
+# Generous row padding so the table fills the page nicely.
+ROW_VERTICAL_PADDING = 22
 
 
 class GeneralRankingPage(QWidget):
@@ -74,7 +78,34 @@ class GeneralRankingPage(QWidget):
         )
 
         standings = compute_standings(players, matches)
-        self._content_layout.addWidget(self._make_table(standings))
+        self._content_layout.addWidget(self._wrap_table(self._make_table(standings)))
+        # No stretch below — let the table expand to the full available area.
+
+    @staticmethod
+    def _wrap_table(table: QTableWidget) -> QFrame:
+        """Same rounded wrap as the pool standings — keeps a coherent look."""
+
+        class _RoundedWrap(QFrame):
+            def __init__(self, radius: int = 10):
+                super().__init__()
+                self.setObjectName("tableWrap")
+                self._radius = radius
+
+            def resizeEvent(self, event):
+                super().resizeEvent(event)
+                path = QPainterPath()
+                path.addRoundedRect(
+                    QRectF(self.rect()), float(self._radius), float(self._radius)
+                )
+                self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+
+        wrap = _RoundedWrap(radius=10)
+        lay = QVBoxLayout(wrap)
+        lay.setContentsMargins(1, 1, 1, 1)
+        lay.setSpacing(0)
+        lay.addWidget(table)
+        wrap.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        return wrap
 
     @staticmethod
     def _make_table(standings: list[PlayerStanding]) -> QTableWidget:
@@ -84,8 +115,7 @@ class GeneralRankingPage(QWidget):
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        # Larger, semi-bold typography for the player-name column — the most
-        # read piece of information on this page.
+        # Larger, semi-bold typography for the player-name column.
         name_font = QFont("Segoe UI", 13, QFont.Weight.DemiBold)
         for row, st in enumerate(standings):
             items = [
@@ -101,12 +131,8 @@ class GeneralRankingPage(QWidget):
                 if col != 1:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 table.setItem(row, col, item)
-        # Let Qt size each row to fit its content (header + the 13pt name font)
-        # — gives a compact, natural height with no scrollbar.
-        table.resizeRowsToContents()
+
         header = table.horizontalHeader()
-        # "Joueur" gets the remaining space; all other columns shrink to fit
-        # max(header label, content) so "Diff sets" header isn't cut off.
         for col in range(table.columnCount()):
             mode = (
                 QHeaderView.ResizeMode.Stretch if col == 1
@@ -115,6 +141,24 @@ class GeneralRankingPage(QWidget):
             header.setSectionResizeMode(col, mode)
         table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         table.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+
+        # Deterministic, generous row height — fills the page nicely.
+        fm = QFontMetrics(name_font)
+        row_h = fm.height() + ROW_VERTICAL_PADDING
+        vh = table.verticalHeader()
+        vh.setDefaultSectionSize(row_h)
+        vh.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+
+        header_fm = QFontMetrics(table.font())
+        header_h = max(header.sizeHint().height(), header_fm.height() + 18)
+        header.setFixedHeight(header_h)
+        table.setFixedHeight(
+            header_h + row_h * table.rowCount() + 2 * table.frameWidth()
+        )
+
+        # Transparent viewport so the rounded wrap shows through.
+        table.viewport().setAutoFillBackground(False)
+        table.viewport().setStyleSheet("background: transparent;")
+        table.setFrameShape(QFrame.Shape.NoFrame)
         return table

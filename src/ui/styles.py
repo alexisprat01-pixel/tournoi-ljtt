@@ -121,7 +121,7 @@ QPushButton#secondary:hover {{
     color: white;
 }}
 
-QLineEdit, QSpinBox, QTextEdit, QDateEdit, QPlainTextEdit {{
+QLineEdit, QSpinBox, QTextEdit, QDateEdit, QPlainTextEdit, QComboBox {{
     background-color: {GREY};
     color: {TEXT};
     border: 1px solid {GREY_LIGHT};
@@ -131,8 +131,42 @@ QLineEdit, QSpinBox, QTextEdit, QDateEdit, QPlainTextEdit {{
     selection-background-color: {RED};
     selection-color: white;
 }}
-QLineEdit:focus, QSpinBox:focus, QTextEdit:focus, QDateEdit:focus, QPlainTextEdit:focus {{
+QLineEdit:focus, QSpinBox:focus, QTextEdit:focus, QDateEdit:focus,
+QPlainTextEdit:focus, QComboBox:focus {{
     border: 1px solid {RED};
+}}
+
+/* Combo box dropdown arrow + popup list. Without explicit styling the
+   popup inherits the OS native palette (white-on-white in dark mode). */
+QComboBox::drop-down {{
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 24px;
+    border-left: 1px solid {GREY_LIGHT};
+    border-top-right-radius: {INPUT_RADIUS}px;
+    border-bottom-right-radius: {INPUT_RADIUS}px;
+}}
+QComboBox::down-arrow {{
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid {TEXT};
+    width: 0px;
+    height: 0px;
+    margin-right: 6px;
+}}
+QComboBox QAbstractItemView {{
+    background-color: {GREY_DARK};
+    color: {TEXT};
+    border: 1px solid {GREY_LIGHT};
+    selection-background-color: {RED};
+    selection-color: white;
+    padding: 4px;
+    outline: 0;
+}}
+QComboBox QAbstractItemView::item {{
+    min-height: 28px;
+    padding: 6px 10px;
 }}
 
 /* Date picker dropdown arrow + popup calendar */
