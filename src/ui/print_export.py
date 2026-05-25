@@ -12,7 +12,7 @@ from __future__ import annotations
 import traceback
 
 from PyQt6.QtCore import QMarginsF, QRectF, Qt
-from PyQt6.QtGui import QColor, QFont, QPageLayout, QPageSize, QPainter, QPen
+from PyQt6.QtGui import QColor, QFont, QPageLayout, QPageSize, QPainter, QPalette, QPen
 from PyQt6.QtPrintSupport import QPrintPreviewDialog, QPrinter
 from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
 
@@ -77,6 +77,22 @@ def open_match_print_preview(
         preview = QPrintPreviewDialog(printer, parent)
         preview.setWindowTitle(f"Imprimer — Session {session}")
         preview.resize(960, 1120)
+        # Force a light palette on the dialog so its toolbar icons (Print, Save PDF,
+        # zoom, page-fit, etc.) render visibly against a light background, regardless
+        # of the parent window's dark palette.
+        light = QPalette()
+        light.setColor(QPalette.ColorRole.Window, QColor("#F2F2F2"))
+        light.setColor(QPalette.ColorRole.WindowText, QColor("#101010"))
+        light.setColor(QPalette.ColorRole.Base, QColor("#FFFFFF"))
+        light.setColor(QPalette.ColorRole.Text, QColor("#101010"))
+        light.setColor(QPalette.ColorRole.Button, QColor("#E6E6E6"))
+        light.setColor(QPalette.ColorRole.ButtonText, QColor("#101010"))
+        light.setColor(QPalette.ColorRole.ToolTipBase, QColor("#FFFFFF"))
+        light.setColor(QPalette.ColorRole.ToolTipText, QColor("#101010"))
+        preview.setPalette(light)
+        # Apply to all descendants (toolbar, buttons, spinbox, combobox).
+        for child in preview.findChildren(QWidget):
+            child.setPalette(light)
 
         players_by_id: dict[int, Player] = {p.id: p for p in players}
 
@@ -165,14 +181,14 @@ def _draw_strip(
     color = QColor(TABLE_COLORS.get(match.table_number, "#666"))
     painter.fillRect(chip, color)
     painter.setPen(QColor("white"))
-    painter.setFont(QFont("Arial", int(M * 2.6), QFont.Weight.Bold))
+    painter.setFont(QFont("Arial", 9, QFont.Weight.Bold))
     painter.drawText(chip, Qt.AlignmentFlag.AlignCenter, f"T{match.table_number}")
 
     # ---- round badge ----
     round_x = chip.right() + 1 * M
     round_rect = QRectF(round_x, inner_top, ROUND_BADGE_W_MM * M, inner_h)
     painter.setPen(QColor("#555"))
-    painter.setFont(QFont("Arial", int(M * 2), QFont.Weight.Bold))
+    painter.setFont(QFont("Arial", 8, QFont.Weight.Bold))
     painter.drawText(round_rect, Qt.AlignmentFlag.AlignCenter,
                      f"R{match.round_number}")
 
@@ -186,7 +202,7 @@ def _draw_strip(
     p2_rect = QRectF(names_x, inner_top + row_h, names_w, row_h)
 
     painter.setPen(QColor("#000"))
-    painter.setFont(QFont("Arial", int(M * 2.4), QFont.Weight.Bold))
+    painter.setFont(QFont("Arial", 8, QFont.Weight.Bold))
     if p1:
         painter.drawText(p1_rect,
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
@@ -211,7 +227,7 @@ def _draw_strip(
     ref = players_by_id.get(match.referee_id) if match.referee_id else None
     ref_x = grid_x + grid_w + 1.5 * M
     ref_w = rect.right() - ref_x - pad
-    painter.setFont(QFont("Arial", int(M * 1.9), QFont.Weight.Normal))
+    painter.setFont(QFont("Arial", 7, QFont.Weight.Normal))
     painter.setPen(QColor("#555"))
     ref_text = f"Arb. {ref.name}" if ref else ""
     painter.drawText(QRectF(ref_x, inner_top, ref_w, inner_h),
