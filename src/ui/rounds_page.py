@@ -309,6 +309,8 @@ class RoundsPage(QWidget):
         row = QHBoxLayout()
         for pool in ("A", "B"):
             box = QVBoxLayout()
+            box.setContentsMargins(0, 0, 0, 0)
+            box.setSpacing(8)
             lbl = QLabel(f"Poule {pool}")
             lbl.setObjectName("h2")
             box.addWidget(lbl)
@@ -320,9 +322,11 @@ class RoundsPage(QWidget):
                     max_round=5,
                 )
             ))
+            box.addStretch(1)  # keep both columns aligned to the top
             cnt = QWidget()
             cnt.setLayout(box)
             row.addWidget(cnt)
+        row.setAlignment(Qt.AlignmentFlag.AlignTop)
         row_w = QWidget()
         row_w.setLayout(row)
         v.addWidget(row_w)
@@ -362,6 +366,11 @@ class RoundsPage(QWidget):
             header.setSectionResizeMode(col, mode)
         table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         table.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        # Compute the exact height (header + rows + frame). AdjustToContents
+        # under-estimates the header height when QSS adds padding, which makes
+        # the header bleed into row 1 and shifts the column visually.
+        header_h = header.sizeHint().height()
+        rows_h = sum(table.rowHeight(r) for r in range(table.rowCount()))
+        table.setFixedHeight(header_h + rows_h + 2 * table.frameWidth())
         return table
