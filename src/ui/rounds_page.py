@@ -1,8 +1,8 @@
 """Rounds page — horizontal tab bar selects a single round; pool standings stay below."""
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QFontMetrics
+from PyQt6.QtCore import QRectF, Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QFontMetrics, QPainterPath, QRegion
 from PyQt6.QtWidgets import (
     QAbstractScrollArea, QFrame, QHBoxLayout, QHeaderView, QLabel, QPushButton,
     QScrollArea, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
@@ -334,16 +334,32 @@ class RoundsPage(QWidget):
 
     @staticmethod
     def _wrap_table(table: QTableWidget) -> QFrame:
-        """Wrap a table inside a rounded QFrame so the bottom corners
-        clip the table's rectangular viewport cleanly."""
-        wrap = QFrame()
-        wrap.setObjectName("tableWrap")
+        """Wrap a table inside a rounded QFrame *with a real rounded mask*.
+
+        QSS border-radius doesn't clip child widgets — the table viewport
+        keeps painting over the corners. Setting a QRegion mask actually
+        constrains the rendered area to the rounded shape, so all four
+        corners look round, including the bottom ones."""
+
+        class _RoundedWrap(QFrame):
+            def __init__(self, radius: int = 10):
+                super().__init__()
+                self.setObjectName("tableWrap")
+                self._radius = radius
+
+            def resizeEvent(self, event):
+                super().resizeEvent(event)
+                path = QPainterPath()
+                path.addRoundedRect(
+                    QRectF(self.rect()), float(self._radius), float(self._radius)
+                )
+                self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+
+        wrap = _RoundedWrap(radius=10)
         lay = QVBoxLayout(wrap)
-        # 1px padding so the table sits inside the frame's rounded border.
         lay.setContentsMargins(1, 1, 1, 1)
         lay.setSpacing(0)
         lay.addWidget(table)
-        # Match the wrap's height to the table's fixed height + padding.
         wrap.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         return wrap
 
