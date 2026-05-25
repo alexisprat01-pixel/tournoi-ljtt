@@ -29,7 +29,7 @@ PAGE_MARGIN_MM = 10
 COL_GAP_MM = 4
 ROW_GAP_MM = 1.5
 TABLE_CHIP_W_MM = 8
-ROUND_BADGE_W_MM = 6
+ROUND_BADGE_W_MM = 9
 NAMES_W_MM = 30
 CELL_W_MM = 6
 N_CELLS = 5
@@ -189,8 +189,10 @@ def _draw_strip(
     round_rect = QRectF(round_x, inner_top, ROUND_BADGE_W_MM * M, inner_h)
     painter.setPen(QColor("#555"))
     painter.setFont(QFont("Arial", 8, QFont.Weight.Bold))
-    painter.drawText(round_rect, Qt.AlignmentFlag.AlignCenter,
-                     f"R{match.round_number}")
+    round_label = f"R{match.round_number}"
+    if match.pool:
+        round_label += f" {match.pool}"
+    painter.drawText(round_rect, Qt.AlignmentFlag.AlignCenter, round_label)
 
     # ---- player names (stacked, aligned with score rows) ----
     p1 = players_by_id.get(match.player1_id)
