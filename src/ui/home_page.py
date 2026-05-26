@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ..database import Database
-from ..models import Tournament
+from ..models import Tournament, tournament_type_label
 from .dialogs import confirm
 from .styles import RED, TEXT
 from .tournament_dialog import TournamentDialog
@@ -143,6 +143,7 @@ class HomePage(QWidget):
         # makes Qt fall back to Segoe UI Emoji for the emoji character only.
         meta = QLabel(
             f"📅  {_fmt_date(t.event_date)}    •    "
+            f"{tournament_type_label(t.tournament_type)}    •    "
             f"Mis à jour le {_fmt_date(t.updated_at.split(' ')[0])}"
         )
         meta_font = QFont()
