@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .dialogs import confirm
-from .styles import RED, TEXT
+from .widgets import make_page_header
 
 
 class PlayerPage(QWidget):
@@ -28,12 +28,14 @@ class PlayerPage(QWidget):
         outer.setContentsMargins(32, 24, 32, 24)
         outer.setSpacing(12)
 
-        title = QLabel(
-            f"<span style='color:{TEXT};'>Saisie des</span> "
-            f"<span style='color:{RED};'>joueurs</span>"
+        outer.addWidget(
+            make_page_header(
+                "Saisie des joueurs",
+                eyebrow="Composition",
+                accent_word="joueurs",
+                lead="Les douze inscrits, classés par points actuels.",
+            )
         )
-        title.setObjectName("h1")
-        outer.addWidget(title)
 
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("muted")

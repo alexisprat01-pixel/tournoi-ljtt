@@ -12,6 +12,7 @@ from ..stats import (
     compute_troublemaker,
 )
 from .styles import GREY, GREY_DARK, GREY_LIGHT, RED, TEXT, TEXT_DIM
+from .widgets import make_page_header
 
 
 # Each entry: (key, title, tooltip description, computer fn, formatter fn)
@@ -123,12 +124,14 @@ class StatisticsPage(QWidget):
 
         head = QVBoxLayout()
         head.setContentsMargins(32, 24, 32, 0)
-        title = QLabel(
-            f"<span style='color:{TEXT};'>Tournoi</span> "
-            f"<span style='color:{RED};'>Statistiques</span>"
+        head.addWidget(
+            make_page_header(
+                "Statistiques",
+                eyebrow="Distinctions",
+                accent_word="Statistiques",
+                lead="Marathoniens, Showmen, et autres titres honorifiques décernés à l'issue du tournoi.",
+            )
         )
-        title.setObjectName("h1")
-        head.addWidget(title)
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("muted")
         self.subtitle.setWordWrap(True)

@@ -13,6 +13,7 @@ from ..tournament import compute_standings
 from .match_card import MatchCard
 from .print_export import open_match_print_preview
 from .styles import GREY, GREY_DARK, GREY_LIGHT, RED, TEXT, TEXT_DIM
+from .widgets import make_page_header
 
 
 class RoundsPage(QWidget):
@@ -41,21 +42,25 @@ class RoundsPage(QWidget):
 
         header = QHBoxLayout()
         header.setContentsMargins(32, 24, 32, 0)
-        self.title = QLabel("")
-        self.title.setObjectName("h1")
-        header.addWidget(self.title)
-        header.addStretch()
-        # Primary red pill — same prominence as "Générer la phase finale".
+        self._header_holder = QWidget()
+        self._header_layout = QVBoxLayout(self._header_holder)
+        self._header_layout.setContentsMargins(0, 0, 0, 0)
+        self._header_layout.setSpacing(0)
+        header.addWidget(self._header_holder, 1)
+        # Primary red button — same prominence as "Générer la phase finale".
         self.print_btn = QPushButton("🖨  Imprimer les matchs")
         self.print_btn.setVisible(False)
         self.print_btn.clicked.connect(self._on_print_clicked)
-        header.addWidget(self.print_btn)
+        header.addWidget(self.print_btn, 0, Qt.AlignmentFlag.AlignTop)
 
         self.action_btn = QPushButton("Générer la phase finale")
         self.action_btn.setVisible(False)
         self.action_btn.clicked.connect(self.generate_cross_requested.emit)
-        header.addWidget(self.action_btn)
+        header.addWidget(self.action_btn, 0, Qt.AlignmentFlag.AlignTop)
         outer.addLayout(header)
+        # Initial placeholder so the layout has a non-zero header height
+        self._set_header(self.session, "Phase de poules" if self.session == 1 else "Phase finale",
+                         accent_word="poules" if self.session == 1 else "finale")
 
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("muted")
@@ -131,14 +136,9 @@ class RoundsPage(QWidget):
         has_session_matches = any(m.phase == target_phase for m in self._matches)
         self.print_btn.setVisible(has_session_matches)
 
-        # Editorial bicolor title: white prefix + red phase.
-        prefix_white = f"<span style='color:{TEXT};'>"
-        prefix_red = f"<span style='color:{RED};'>"
-        end = "</span>"
-
         if self.session == 1:
             if not pool_rounds:
-                self.title.setText(f"{prefix_white}Session 1{end} {prefix_red}Phase de poules{end}")
+                self._set_header(1, "Phase de poules", accent_word="poules")
                 self.subtitle.setText(
                     "Les poules ne sont pas encore tirées. "
                     "Va dans l'onglet \"Joueurs\" pour démarrer."
@@ -146,7 +146,7 @@ class RoundsPage(QWidget):
                 self.action_btn.setVisible(False)
                 return
             if pools_complete and not cross_rounds:
-                self.title.setText(f"{prefix_white}Session 1{end} {prefix_red}Phase terminée{end}")
+                self._set_header(1, "Phase terminée", accent_word="terminée")
                 self.subtitle.setText(
                     "Tous les matchs de poule sont joués. "
                     "Tu peux générer la Session 2 (phase finale)."
@@ -154,11 +154,11 @@ class RoundsPage(QWidget):
                 self.action_btn.setText("Générer la phase finale")
                 self.action_btn.setVisible(True)
             elif cross_rounds:
-                self.title.setText(f"{prefix_white}Session 1{end} {prefix_red}Phase de poules{end}")
+                self._set_header(1, "Phase de poules", accent_word="poules")
                 self.subtitle.setText("La Session 2 (phase finale) est déjà générée.")
                 self.action_btn.setVisible(False)
             else:
-                self.title.setText(f"{prefix_white}Session 1{end} {prefix_red}Phase de poules{end}")
+                self._set_header(1, "Phase de poules", accent_word="poules")
                 self.subtitle.setText(
                     "Tours 1 à 5 — chaque joueur rencontre les 5 autres de sa poule."
                 )
@@ -166,19 +166,31 @@ class RoundsPage(QWidget):
         else:
             # Session 2
             if not cross_rounds:
-                self.title.setText(f"{prefix_white}Session 2{end} {prefix_red}Phase finale{end}")
+                self._set_header(2, "Phase finale", accent_word="finale")
                 self.subtitle.setText(
                     "La phase finale n'est pas encore générée. Termine la Session 1 "
                     "et clique sur \"Générer la phase finale\"."
                 )
                 self.action_btn.setVisible(False)
                 return
-            self.title.setText(f"{prefix_white}Session 2{end} {prefix_red}Phase finale{end}")
+            self._set_header(2, "Phase finale", accent_word="finale")
             self.subtitle.setText(
                 "Tours 6 à 11 — chaque joueur de la poule A affronte tous ceux de la "
                 "poule B. Le tour 11 oppose les joueurs de même rang."
             )
             self.action_btn.setVisible(False)
+
+    def _set_header(self, session_no: int, title: str, *, accent_word: str | None) -> None:
+        """Rebuild the editorial header (eyebrow + title + rule) for this state."""
+        while self._header_layout.count():
+            item = self._header_layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
+        eyebrow = f"Session {session_no}"
+        self._header_layout.addWidget(
+            make_page_header(title, eyebrow=eyebrow, accent_word=accent_word)
+        )
 
     # ----- Tab bar -----
     def _build_tab_bar(self, rounds: list[int]) -> QFrame:

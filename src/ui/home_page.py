@@ -11,8 +11,8 @@ from PyQt6.QtWidgets import (
 from ..database import Database
 from ..models import Tournament, tournament_type_label
 from .dialogs import confirm
-from .styles import RED, TEXT
 from .tournament_dialog import TournamentDialog
+from .widgets import make_page_header
 
 
 def _fmt_date(iso: str) -> str:
@@ -41,18 +41,20 @@ class HomePage(QWidget):
         outer.setContentsMargins(32, 24, 32, 24)
         outer.setSpacing(12)
 
-        header = QHBoxLayout()
-        title = QLabel(
-            f"<span style='color:{TEXT};'>Mes</span> "
-            f"<span style='color:{RED};'>tournois</span>"
+        header_row = QHBoxLayout()
+        header_row.addWidget(
+            make_page_header(
+                "Mes tournois",
+                eyebrow="Accueil",
+                accent_word="tournois",
+                lead="Sélectionne un tournoi existant ou crée la prochaine édition.",
+            ),
+            1,
         )
-        title.setObjectName("h1")
-        header.addWidget(title)
-        header.addStretch()
         new_btn = QPushButton("+ Nouveau tournoi")
         new_btn.clicked.connect(self._on_new)
-        header.addWidget(new_btn)
-        outer.addLayout(header)
+        header_row.addWidget(new_btn, 0, Qt.AlignmentFlag.AlignTop)
+        outer.addLayout(header_row)
 
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("muted")

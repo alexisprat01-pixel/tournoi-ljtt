@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton, QWidget,
 )
@@ -46,8 +47,8 @@ class MatchCard(QFrame):
         h.setContentsMargins(16, 12, 16, 12)
         h.setSpacing(14)
 
-        # Colored round badge for the table
-        badge = self._build_table_badge(match.table_number)
+        # Colored table pill (T1 rouge, T2 bleu, T3 vert — convention club)
+        badge = self._build_table_badge(match.table_number, played=match.played)
         h.addWidget(badge)
         h.addSpacing(6)
 
@@ -96,15 +97,29 @@ class MatchCard(QFrame):
         h.addWidget(self.btn)
 
     @staticmethod
-    def _build_table_badge(table_number: int) -> QLabel:
+    def _build_table_badge(table_number: int, played: bool = False) -> QLabel:
         text = f"T{table_number}" if table_number else "?"
         color = TABLE_COLORS.get(table_number, "#6C6C72")
         badge = QLabel(text)
-        badge.setFixedSize(36, 36)
+        badge.setFixedHeight(26)
+        badge.setMinimumWidth(44)
+        badge.setMaximumWidth(56)
         badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Qt QSS does not honour `opacity`; we bake the alpha into the
+        # background colour (and text colour) when the match has been played
+        # so the pill visually recedes while staying readable.
+        if played:
+            c = QColor(color)
+            bg = f"rgba({c.red()},{c.green()},{c.blue()},128)"
+            fg = "rgba(255,255,255,180)"
+        else:
+            bg = color
+            fg = "white"
         badge.setStyleSheet(
-            f"background-color:{color}; color:white; font-weight:bold; "
-            "font-size:11pt; border-radius:18px;"
+            f"background-color:{bg}; color:{fg}; font-weight:700; "
+            "font-family:'JetBrains Mono','Consolas',monospace; "
+            "font-size:10pt; letter-spacing:1px; border-radius:13px; "
+            "padding:0 10px;"
         )
         badge.setToolTip(f"Table {table_number}" if table_number else "Table non assignée")
         return badge

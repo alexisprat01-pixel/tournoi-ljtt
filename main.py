@@ -7,6 +7,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 
 from src.database import Database
+from src.ui import styles
 from src.ui.main_window import MainWindow
 
 
@@ -56,6 +57,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName("Tournoi LJTT")
+    styles.load_fonts(app)
 
     assets = _assets_dir()
     icon_path = assets / "icon.ico"
