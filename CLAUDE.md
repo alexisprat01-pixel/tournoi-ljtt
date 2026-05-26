@@ -44,8 +44,10 @@ src/
 ├── tournament.py          # ALL match-generation and ranking logic — see "Algorithms" below
 ├── stats.py               # Statistics page awards (Marathonien, Showmen, etc.)
 └── ui/
-    ├── styles.py          # V6 "Editorial" theme: palette + STYLESHEET + GlowBackground widget
+    ├── styles.py          # "Editorial Club" theme: palette + STYLESHEET + GlowBackground + load_fonts()
+    ├── styles_editorial_v6.py  # previous V6 "Editorial / Hero" theme, kept for rollback
     ├── styles_legacy.py   # pre-V6 theme, kept for rollback
+    ├── widgets.py         # small reusable helpers — currently just make_page_header()
     ├── main_window.py     # QMainWindow, sidebar (TOURNOI / NAVIGATION / ACTIONS), QStackedWidget routing
     ├── home_page.py       # Tournament list + new/open/edit/delete
     ├── tournament_dialog.py  # Create/edit dialog with the "Type de tournoi" combo
@@ -80,7 +82,9 @@ All in `tournament.py`. Read this section before editing scheduling or rankings.
 
 ## UI theme notes
 
-- The page background is a custom `GlowBackground` widget (radial red gradient on near-black) in `styles.py`. Most widgets are transparent in QSS so the glow shows through; cards/inputs set their own surface.
+- The page background is a custom `GlowBackground` widget (radial bordeaux gradient on near-black, default corner `bottom-left`, intensity 80) in `styles.py`. Most widgets are transparent in QSS so the glow shows through; cards/inputs set their own surface.
+- Four variable fonts are embedded under `src/assets/fonts/` and registered at startup via `styles.load_fonts(app)` called from `main.py` after `QApplication` creation: Inter (UI), Playfair Display (h1/h2 — italic accent word in titles), Source Serif 4 (body), JetBrains Mono (scores & numbers). The QSS font-family stacks fall back to Segoe UI / Georgia / Consolas if the TTFs fail to load.
+- Page headers go through `widgets.make_page_header(title, eyebrow=..., accent_word=..., lead=...)`. The helper renders an eyebrow (uppercase bordeaux), a serif h1 with one word optionally italicised in bordeaux, an optional lead paragraph, and a 1px red hairline. `rounds_page.py` rebuilds the header dynamically (session 1 / session 2 / pool variants) via `_set_header()`.
 - **Tables with rounded corners** use a `_RoundedWrap` QFrame with a `QRegion` mask + a transparent viewport. QSS `border-radius` does **not** clip child widgets in Qt — the mask is what actually rounds the bottom corners. See `rounds_page.py::_wrap_table` and `general_ranking_page.py`.
 - **Deterministic row heights**: row heights are computed from `QFontMetrics` (not `resizeRowsToContents`), so pool A and pool B align even when names have different lengths.
 - **Print preview**: `print_export.py` temporarily clears the app stylesheet AND forces a light `QPalette` on `QPrintPreviewDialog` because Qt's print dialog inherits the parent's dark palette and the toolbar buttons go invisible otherwise.
@@ -100,6 +104,7 @@ All in `tournament.py`. Read this section before editing scheduling or rankings.
 - Remote: `https://github.com/alexisprat01-pixel/tournoi-ljtt.git` (the old `top12` repo was renamed; GitHub keeps the redirect)
 - Commit messages are in French, imperative form, one-line summary + optional body
 - Tag `pre-editorial-theme` marks the last commit before the V6 theme — useful as a rollback reference
+- Tag `pre-editorial-club-theme` marks the last commit before the "Editorial Club" theme (2026-05-26). Rollback: `git checkout pre-editorial-club-theme`. Page files were refactored to use `widgets.make_page_header`, so a simple import switch from `styles` to `styles_editorial_v6` won't fully revert the look — use the tag.
 
 ## Things to avoid
 
