@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 
 from ..models import Match, Player, PlayerStanding
 from ..tournament import compute_standings
-from .styles import RED, TEXT
+from .widgets import make_page_header
 
 
 # Generous row padding so the table fills the page nicely.
@@ -29,12 +29,14 @@ class GeneralRankingPage(QWidget):
         outer.setContentsMargins(32, 24, 32, 24)
         outer.setSpacing(12)
 
-        title = QLabel(
-            f"<span style='color:{TEXT};'>Classement</span> "
-            f"<span style='color:{RED};'>général</span>"
+        outer.addWidget(
+            make_page_header(
+                "Classement général",
+                eyebrow="Tournoi complet",
+                accent_word="général",
+                lead="Bilan après les 11 tours, tous classements confondus.",
+            )
         )
-        title.setObjectName("h1")
-        outer.addWidget(title)
 
         self.subtitle = QLabel("")
         self.subtitle.setObjectName("muted")
